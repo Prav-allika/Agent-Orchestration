@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+data/
+workdir/*
+!workdir/.gitkeep
+.streamlit/
+*.egg-info/
+.pytest_cache/

@@ -1,3 +1,14 @@
+---
+title: Agent Orchestration
+emoji: 🧭
+colorFrom: red
+colorTo: blue
+sdk: streamlit
+sdk_version: "1.39.0"
+app_file: ui/app.py
+pinned: false
+---
+
 # Agent Orchestration System
 
 A multi-agent orchestration platform: a **supervisor** decomposes a task, delegates
@@ -71,6 +82,17 @@ cp .env.example .env   # then add your OPENAI_API_KEY
 ```
 
 Requires Python 3.10+.
+
+### Deploying on Hugging Face Spaces
+
+This repo is HF Spaces-ready (`sdk: streamlit`, `app_file: ui/app.py` in the frontmatter above).
+There's no `.env` file on a Space — set `OPENAI_API_KEY` as a **Secret** in the Space's Settings tab
+instead; it's injected as a real environment variable at runtime, which `config.py` reads the same way.
+Everything else (models, thresholds) can optionally be overridden as additional Space secrets/variables
+using the same names as `.env.example`.
+
+Note: a Space's filesystem is ephemeral by default — the SQLite DB, ChromaDB store, and sandboxed
+`workdir/` reset on restart/redeploy unless persistent storage is enabled for the Space.
 
 ## Running it
 

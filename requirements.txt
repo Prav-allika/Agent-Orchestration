@@ -6,6 +6,7 @@ chromadb>=0.5.20
 pydantic>=2.9.0
 python-dotenv>=1.0.1
 streamlit>=1.39.0
+gradio>=6.0.0
 pandas>=2.2.0
 tenacity>=9.0.0
 beautifulsoup4>=4.12.0

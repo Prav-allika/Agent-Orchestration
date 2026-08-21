@@ -3,9 +3,9 @@ title: Agent Orchestration
 emoji: 🧭
 colorFrom: red
 colorTo: blue
-sdk: streamlit
-sdk_version: "1.39.0"
-app_file: ui/app.py
+sdk: gradio
+sdk_version: "6.25.0"
+app_file: app.py
 pinned: false
 ---
 
@@ -85,7 +85,16 @@ Requires Python 3.10+.
 
 ### Deploying on Hugging Face Spaces
 
-This repo is HF Spaces-ready (`sdk: streamlit`, `app_file: ui/app.py` in the frontmatter above).
+There are two UIs in this repo, deliberately kept in sync against the same backend:
+
+- **`app.py`** (repo root) — Gradio, used for the deployed Space (`sdk: gradio`, `app_file: app.py` in
+  the frontmatter above). Hugging Face requires a paid plan to host most compute-backed Spaces, but
+  **free personal accounts can host up to 2 Gradio Spaces on ZeroGPU hardware** (verified email,
+  account >30 days old — see [ZeroGPU docs](https://huggingface.co/docs/hub/en/spaces-zerogpu)). This
+  app never touches a GPU (it only calls the OpenAI API over HTTP) — ZeroGPU hardware is selected purely
+  to get free hosting, not because anything here needs it.
+- **`ui/app.py` + `ui/pages/`** — Streamlit, used for local development (see "Running it" below).
+
 There's no `.env` file on a Space — set `OPENAI_API_KEY` as a **Secret** in the Space's Settings tab
 instead; it's injected as a real environment variable at runtime, which `config.py` reads the same way.
 Everything else (models, thresholds) can optionally be overridden as additional Space secrets/variables
@@ -111,9 +120,15 @@ python demo/run_demo.py --memory-followup         # + a second related task to s
 streamlit run ui/app.py
 ```
 
-Pages: **Task Console** (submit + recent tasks) → **Approval Queue** (resolve escalations,
-ask the agent clarifying questions) → **Trace Explorer** (execution tree, cost/perf) →
-**Memory Dashboard** (what's remembered per user, decay/consolidate/delete).
+**Gradio console** (same four capabilities, used for the Hugging Face Space deployment):
+
+```bash
+python app.py
+```
+
+Both UIs have the same four tabs/pages: **Task Console** (submit + recent tasks) → **Approval Queue**
+(resolve escalations, ask the agent clarifying questions) → **Trace Explorer** (execution tree,
+cost/perf, quality metrics) → **Memory Dashboard** (what's remembered per user, decay/consolidate/delete).
 
 ## Tests
 

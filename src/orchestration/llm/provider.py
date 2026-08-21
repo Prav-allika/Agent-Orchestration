@@ -70,17 +70,23 @@ class ChatResult:
     latency_ms: float
 
 
+# temperature defaults to None (omitted from the API call entirely) rather than some fixed value
+# like 0.2 -- newer models (gpt-5-mini, gpt-5-nano, o-series) reject ANY explicit temperature other
+# than their default (1) and error with "Unsupported value" if you pass one, while older models
+# (gpt-4o-mini, gpt-4o) accept arbitrary values. Omitting the parameter is the only setting that
+# works across both families; no caller in this codebase currently needs deterministic sampling
+# badly enough to hardcode a model-specific override.
 class LLMProvider:
-    def complete(self, *, model: str, messages: list[dict], temperature: float = 0.2) -> LLMResponse:
+    def complete(self, *, model: str, messages: list[dict], temperature: float | None = None) -> LLMResponse:
         raise NotImplementedError
 
     def complete_structured(
-        self, *, model: str, messages: list[dict], schema: type[T], temperature: float = 0.0
+        self, *, model: str, messages: list[dict], schema: type[T], temperature: float | None = None
     ) -> tuple[T, LLMResponse]:
         raise NotImplementedError
 
     def complete_with_tools(
-        self, *, model: str, messages: list[dict], tools: list[dict], temperature: float = 0.2
+        self, *, model: str, messages: list[dict], tools: list[dict], temperature: float | None = None
     ) -> ChatResult:
         raise NotImplementedError
 
@@ -96,11 +102,10 @@ class OpenAIProvider(LLMProvider):
         self._client = OpenAI(api_key=api_key)
 
     @_llm_retry
-    def complete(self, *, model: str, messages: list[dict], temperature: float = 0.2) -> LLMResponse:
+    def complete(self, *, model: str, messages: list[dict], temperature: float | None = None) -> LLMResponse:
         start = time.perf_counter()
-        resp = self._client.chat.completions.create(
-            model=model, messages=messages, temperature=temperature
-        )
+        kwargs = {"temperature": temperature} if temperature is not None else {}
+        resp = self._client.chat.completions.create(model=model, messages=messages, **kwargs)
         latency_ms = (time.perf_counter() - start) * 1000
         usage = resp.usage
         prompt_tokens = usage.prompt_tokens if usage else 0
@@ -116,11 +121,12 @@ class OpenAIProvider(LLMProvider):
 
     @_llm_retry
     def complete_structured(
-        self, *, model: str, messages: list[dict], schema: type[T], temperature: float = 0.0
+        self, *, model: str, messages: list[dict], schema: type[T], temperature: float | None = None
     ) -> tuple[T, LLMResponse]:
         start = time.perf_counter()
+        kwargs = {"temperature": temperature} if temperature is not None else {}
         resp = self._client.beta.chat.completions.parse(
-            model=model, messages=messages, temperature=temperature, response_format=schema
+            model=model, messages=messages, response_format=schema, **kwargs
         )
         latency_ms = (time.perf_counter() - start) * 1000
         usage = resp.usage
@@ -141,14 +147,13 @@ class OpenAIProvider(LLMProvider):
 
     @_llm_retry
     def complete_with_tools(
-        self, *, model: str, messages: list[dict], tools: list[dict], temperature: float = 0.2
+        self, *, model: str, messages: list[dict], tools: list[dict], temperature: float | None = None
     ) -> ChatResult:
         import json as _json
 
         start = time.perf_counter()
-        resp = self._client.chat.completions.create(
-            model=model, messages=messages, temperature=temperature, tools=tools or None,
-        )
+        kwargs = {"temperature": temperature} if temperature is not None else {}
+        resp = self._client.chat.completions.create(model=model, messages=messages, tools=tools or None, **kwargs)
         latency_ms = (time.perf_counter() - start) * 1000
         usage = resp.usage
         prompt_tokens = usage.prompt_tokens if usage else 0

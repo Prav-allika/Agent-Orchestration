@@ -9,3 +9,4 @@ workdir/*
 .streamlit/
 *.egg-info/
 .pytest_cache/
+.claude/
